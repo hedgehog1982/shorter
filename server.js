@@ -10,15 +10,17 @@ var express = require('express');
 var validUrl = require('valid-url');  //npm install valid-url // checks to see if URL is live
 var app = express();
 
-function isValidURL(URL){
-if (validUrl.isUri(URL)){
-    return true;
-} 
-else {
-    return false
+function genShort (){
+  var shortCode = [];
+  for (var i = 0 ; i < 6; i++){
+    shortCode[i] = Math.floor(Math.random() * 25) + 65; // genearte number between 0 and 25
+  }
+  return (shortCode.join(" "));
 }
   
-}
+  
+  
+
 
 if (!process.env.DISABLE_XORIGIN) {
   app.use(function(req, res, next) {
@@ -53,17 +55,18 @@ app.route('/')
 app.use(function(req, res, next){
 
     var originalURL = (req.originalUrl).split("").slice(1).join("") //read in original url remove /
-    
-    if (!isValidURL(originalURL)) {  	// can i connect to the URL supplied? if not throw an error saves the pain of REGEX
+
+    if (!validUrl.isUri(originalURL)) {  	// can i connect to the URL supplied? if not throw an error saves the pain of REGEX
       res.sendFile(process.cwd() + '/views/error.html');
     } else {  // i want to generate 6 random letters 
+      console.log(genShort() + " is valid");
       
     }
   
   
   
   
-  console.log(originalURL + " is " + isValidURL(originalURL));
+  //console.log(originalURL + " is " + isValidURL(originalURL));
   
   
 });
