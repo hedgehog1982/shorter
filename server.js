@@ -17,9 +17,9 @@ function genShort (){
     if (Math.floor(Math.random() * 2) === 0){
       caseType = 65; // for an uppercase letter
     } else {
-      caseType = 97;
+      caseType = 97; //for lowercase
     }
-    shortCode[i] = String.fromCharCode(Math.floor(Math.random() * 25) + caseType); // genearte number between 0 and 25
+    shortCode[i] = String.fromCharCode(Math.floor(Math.random() * 25) + caseType); // genearte number between 0 and 25 and turn it into an upper or lowercase letter
   }
   return (shortCode.join(""));
 }
@@ -60,22 +60,41 @@ app.route('/')
 // FOR all routes see if it is a valid http
 app.use(function(req, res, next){
 
+
     var originalURL = (req.originalUrl).split("").slice(1).join("") //read in original url remove /
 
-    if (!validUrl.isUri(originalURL)) {  	// can i connect to the URL supplied? if not throw an error saves the pain of REGEX
-      res.sendFile(process.cwd() + '/views/error.html');  // if I cant connect is it already a short URL? will need to check that
-    } else {  // i want to generate 6 random letters ( also need to check if they have been used before so it doesnt get overwritten)
+    if (validUrl.isUri(originalURL)) {  	// can i connect to the URL supplied? if not throw an error saves the pain of REGEX
+        var urlJSON = { "original_url" : "" ,"short_url" : ""};
+            // I also need to check if they have been used before so it doesnt get overwritten, highly unlikely)
+                urlJSON["original_url"] = originalURL;
+                urlJSON["short_url"] = (req.protocol + "://" + req.get('host') + "/" + genShort() + "/");
+                //res.send(" Your shortend URL for " + originalURL + " is " + req.protocol + "://" + req.get('host') + "/" + genShort() + "/");  // need to generate html on fly because this is awful
+              res.send(urlJSON);
+    } else if (originalURL.length ===6){  // if it is 6 letters long it may be a shortcode need to check if its a shortcode
       
-      res.send(" Your shortend URL for " + originalURL + " is " + req.protocol + "://" + req.get('host') + "/" + genShort() + "/");  // need to generate html on fly because this is awful
-    }
-  
-  
-  
-  
-  //console.log(originalURL + " is " + isValidURL(originalURL));
-  
+      //if it not on database
+      if ( 1 === 1){
+        var shortError = {"error":"This url is not on the database."}
+        res.send(shortError)
+        } else {  // url is on database so redirect
+          
+                res.redirect('http://google.com'); //using this for forwarding  
+        }
+      
+      
+      
+      
+      
+    } else {          //if  its not a valid email and its not a vailid shortcode
+      var urlError = { "error":"Wrong url format, make sure you have a valid protocol and real site."};
+      res.send(urlError);
+    
+    }    
+      
+
   
 });
+
 
 // Error Middleware
 app.use(function(err, req, res, next) {
