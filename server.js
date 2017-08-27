@@ -7,16 +7,18 @@
 
 var fs = require('fs');
 var express = require('express');
+var validUrl = require('valid-url');  //npm install valid-url // checks to see if URL is live
 var app = express();
 
-function displayTimeNicely (date){
-  console.log(date.getFullYear());
-  const months = ["January","February", "March", "April", "May","June", "July","August","September", "October", "November", "December"];
-  var lovelyTime = (months[date.getMonth()] + " " + date.getDate() + ", " + date.getFullYear());
-   
-  return lovelyTime;
+function isValidURL(URL){
+if (validUrl.isUri(URL)){
+    return true;
+} 
+else {
+    return false
 }
-
+  
+}
 
 if (!process.env.DISABLE_XORIGIN) {
   app.use(function(req, res, next) {
@@ -47,30 +49,22 @@ app.route('/')
 		  res.sendFile(process.cwd() + '/views/index.html');
     })
 
-
-// Respond with date
+// FOR all routes see if it is a valid http
 app.use(function(req, res, next){
-  var displayTime = {"unix" : null, "natural" : null};
-  var originalURL = (req.originalUrl).split("").slice(1).join("").split("%20").join(" "); //get rid of front and replace %20 for space
-  var newDate = new Date(originalURL);
-  var unixDate = new Date(originalURL * 1000);
-  console.log(unixDate);
 
-   if (newDate.getTime() && (originalURL.length > 6)) {  // can i convert it to a unix time ? if I can its a vaild UTC Date if length less than 6 weird bug?
-     displayTime["natural"] = originalURL;
-     displayTime["unix"] = newDate.getTime()/1000;
-   } else if (unixDate.getDate() && (originalURL.length > 6)){ //can i convert it to a valid UTC Date 
-
-     
-           displayTime["unix"] = originalURL;
-           displayTime["natural"] = displayTimeNicely(unixDate);
+    var originalURL = (req.originalUrl).split("").slice(1).join("") //read in original url remove /
+    
+    if (!isValidURL(originalURL)) {  	// can i connect to the URL supplied? if not throw an error saves the pain of REGEX
+      res.sendFile(process.cwd() + '/views/error.html');
+    } else {  // i want to generate 6 random letters 
       
-   } else {
-
-     displayTime = {"unix" : null, "natural" : null};
-   }
-      
-  res.send(displayTime);
+    }
+  
+  
+  
+  
+  console.log(originalURL + " is " + isValidURL(originalURL));
+  
   
 });
 
