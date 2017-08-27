@@ -7,15 +7,25 @@
 
 var fs = require('fs');
 var express = require('express');
+var validUrl = require('valid-url');  //npm install valid-url // checks to see if URL is live
 var app = express();
 
-function displayTimeNicely (date){
-  console.log(date.getFullYear());
-  const months = ["January","February", "March", "April", "May","June", "July","August","September", "October", "November", "December"];
-  var lovelyTime = (months[date.getMonth()] + " " + date.getDate() + ", " + date.getFullYear());
-   
-  return lovelyTime;
+function genShort (){
+  var shortCode = [];
+  var caseType;
+  for (var i = 0 ; i < 6; i++){
+    if (Math.floor(Math.random() * 2) === 0){
+      caseType = 65; // for an uppercase letter
+    } else {
+      caseType = 97;
+    }
+    shortCode[i] = String.fromCharCode(Math.floor(Math.random() * 25) + caseType); // genearte number between 0 and 25
+  }
+  return (shortCode.join(""));
 }
+  
+  
+  
 
 
 if (!process.env.DISABLE_XORIGIN) {
@@ -47,30 +57,23 @@ app.route('/')
 		  res.sendFile(process.cwd() + '/views/index.html');
     })
 
-
-// Respond with date
+// FOR all routes see if it is a valid http
 app.use(function(req, res, next){
-  var displayTime = {"unix" : null, "natural" : null};
-  var originalURL = (req.originalUrl).split("").slice(1).join("").split("%20").join(" "); //get rid of front and replace %20 for space
-  var newDate = new Date(originalURL);
-  var unixDate = new Date(originalURL * 1000);
-  console.log(unixDate);
 
-   if (newDate.getTime() && (originalURL.length > 6)) {  // can i convert it to a unix time ? if I can its a vaild UTC Date if length less than 6 weird bug?
-     displayTime["natural"] = originalURL;
-     displayTime["unix"] = newDate.getTime()/1000;
-   } else if (unixDate.getDate() && (originalURL.length > 6)){ //can i convert it to a valid UTC Date 
+    var originalURL = (req.originalUrl).split("").slice(1).join("") //read in original url remove /
 
-     
-           displayTime["unix"] = originalURL;
-           displayTime["natural"] = displayTimeNicely(unixDate);
+    if (!validUrl.isUri(originalURL)) {  	// can i connect to the URL supplied? if not throw an error saves the pain of REGEX
+      res.sendFile(process.cwd() + '/views/error.html');  // if I cant connect is it already a short URL? will need to check that
+    } else {  // i want to generate 6 random letters ( also need to check if they have been used before so it doesnt get overwritten)
       
-   } else {
-
-     displayTime = {"unix" : null, "natural" : null};
-   }
-      
-  res.send(displayTime);
+      res.send(" Your shortend URL for " + originalURL + " is " + req.protocol + "://" + req.get('host') + "/" + genShort() + "/");  // need to generate html on fly because this is awful
+    }
+  
+  
+  
+  
+  //console.log(originalURL + " is " + isValidURL(originalURL));
+  
   
 });
 
