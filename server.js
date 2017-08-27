@@ -12,10 +12,16 @@ var app = express();
 
 function genShort (){
   var shortCode = [];
+  var caseType;
   for (var i = 0 ; i < 6; i++){
-    shortCode[i] = Math.floor(Math.random() * 25) + 65; // genearte number between 0 and 25
+    if (Math.floor(Math.random() * 2) === 0){
+      caseType = 65; // for an uppercase letter
+    } else {
+      caseType = 97;
+    }
+    shortCode[i] = String.fromCharCode(Math.floor(Math.random() * 25) + caseType); // genearte number between 0 and 25
   }
-  return (shortCode.join(" "));
+  return (shortCode.join(""));
 }
   
   
@@ -57,10 +63,10 @@ app.use(function(req, res, next){
     var originalURL = (req.originalUrl).split("").slice(1).join("") //read in original url remove /
 
     if (!validUrl.isUri(originalURL)) {  	// can i connect to the URL supplied? if not throw an error saves the pain of REGEX
-      res.sendFile(process.cwd() + '/views/error.html');
-    } else {  // i want to generate 6 random letters 
-      console.log(genShort() + " is valid");
+      res.sendFile(process.cwd() + '/views/error.html');  // if I cant connect is it already a short URL? will need to check that
+    } else {  // i want to generate 6 random letters ( also need to check if they have been used before so it doesnt get overwritten)
       
+      res.send(" Your shortend URL for " + originalURL + " is " + req.protocol + "://" + req.get('host') + "/" + genShort() + "/");  // need to generate html on fly because this is awful
     }
   
   
