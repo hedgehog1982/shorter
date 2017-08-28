@@ -112,7 +112,11 @@ app.route('/')
 
 // FOR all routes see if it is a valid http
 app.use(function(req, res, next){
-    var originalURL = (req.originalUrl).split("").slice(1).join("") //read in original url remove "/"
+    var tempArray = (req.originalUrl).split("").slice(1);
+  if (tempArray[tempArray.length-1]==="/" ) {
+       tempArray =tempArray.slice(0 , -1); // remove the /
+  }
+    var originalURL = tempArray.join("") //read in original url remove "/"
 
 ///////////////////////////////////////////////////////// is it a valid URL that has been passed\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     if (validUrl.isUri(originalURL)) {  	// can i connect to the URL supplied? if not throw an error saves the pain of REGEX
