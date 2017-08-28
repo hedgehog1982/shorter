@@ -32,9 +32,9 @@ function genShort (){
 function addDB (short, full){
     MongoClient.connect(url, function (err, db) {
   if (err) {
-    console.log('Unable to connect to the mongoDB server. Error:', err);
+    //console.log('Unable to connect to the mongoDB server. Error:', err);
   } else {
-    console.log('Connection established to', url);
+    //console.log('Connection established to', url);
     var collection = db.collection('URLS');  // seraching a collection in this docs
 			
 			//var doc = {				//create our document to enter shortcode and full
@@ -48,7 +48,6 @@ function addDB (short, full){
 	
 				},function(err, documents) { // recieve error or documents
 					if (err) throw err;
-					//console.log(" I have written" + JSON.stringify(doc));
 					
 					db.close();  // close or it get grumpy
 				})
@@ -61,19 +60,18 @@ function readDB (searchTerm ,searchFor, callback){
   
     MongoClient.connect(url, function (err, db) {  
       if (err) {
-          console.log('Unable to connect to the mongoDB server. Error:', err);
+          //console.log('Unable to connect to the mongoDB server. Error:', err);
       } else {
-          console.log('Connection established to', url);
+          //console.log('Connection established to', url);
 
 var collection = db.collection('URLS');  // seraching a collection in this docs
-								//console.log(searchFor);
             collection.find({  //find in our collection (URL)
 				         [searchTerm]:{   //need to put it in square brackets to use a variable so it knows its not a literal
 					           $eq: searchFor
 					        } //search for greater than or equal
 				}).toArray(function(err, documents) { // recieve error or documents
               if (err) {console.log("error is" + err);}
-					console.log(documents);					
+					//console.log(documents);					
 					db.close();
             callback (documents);
       }); //end of find
@@ -138,24 +136,13 @@ app.use(function(req, res, next){
         
       });
       
-      
-      
-      
-                
 
-
-
-                //res.send(" Your shortend URL for " + originalURL + " is " + req.protocol + "://" + req.get('host') + "/" + genShort() + "/");  // need to generate html on fly because this is awful
-
-      
-      
       
       
 ///////////////////////////////////////////////////////// is it a shortcode?     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     } else if (originalURL.length ===6){  // if it is 6 letters long it may be a shortcode need to check if its a shortcode
             
       readDB("shortcode", originalURL, function(result){  //look for shortcode DB and await a callback
-        console.log(result.length);
         if (result.length < 1){  //if its not found
           var error = ('"error":"This url is not on the database."');
           res.send(error);  //if the address has not been found send error
