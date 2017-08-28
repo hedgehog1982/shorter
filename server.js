@@ -10,6 +10,11 @@ var express = require('express');
 var validUrl = require('valid-url');  //npm install valid-url // checks to see if URL is live
 var app = express();
 
+var mongodb = require('mongodb');
+var MongoClient = mongodb.MongoClient;
+var url = "mongodb://" + process.env.SECRET +"@ds149763.mlab.com:49763/freecodecamp"          ; //url for connection to database
+
+
 function genShort (){
   var shortCode = [];
   var caseType;
@@ -23,9 +28,59 @@ function genShort (){
   }
   return (shortCode.join(""));
 }
+
+function addDB (short, full){
+    MongoClient.connect(url, function (err, db) {
+  if (err) {
+    console.log('Unable to connect to the mongoDB server. Error:', err);
+  } else {
+    console.log('Connection established to', url);
+    var collection = db.collection('URLS');  // seraching a collection in this docs
+			
+			//var doc = {				//create our document to enter shortcode and full
+		//						shortcode: short
+	//							,fullURl: full
+	//					}
+					
+		    collection.insert({  //insert into our collection (docs)
+				shortcode: short
+								,fullURl: full
+	
+				},function(err, documents) { // recieve error or documents
+					if (err) throw err;
+					//console.log(" I have written" + JSON.stringify(doc));
+					
+					db.close();  // close or it get grumpy
+				})
+    //Close connection
+  }
+});  
+}
+
+function readDB (searchTerm ,searchFor, callback){
   
-  
-  
+    MongoClient.connect(url, function (err, db) {  
+      if (err) {
+          console.log('Unable to connect to the mongoDB server. Error:', err);
+      } else {
+          console.log('Connection established to', url);
+
+var collection = db.collection('URLS');  // seraching a collection in this docs
+								//console.log(searchFor);
+            collection.find({  //find in our collection (URL)
+				         [searchTerm]:{   //need to put it in square brackets to use a variable so it knows its not a literal
+					           $eq: searchFor
+					        } //search for greater than or equal
+				}).toArray(function(err, documents) { // recieve error or documents
+              if (err) {console.log("error is" + err);}
+					console.log(documents);					
+					db.close();
+            callback (documents);
+      }); //end of find
+    }  //end of else
+  })
+
+  }
 
 
 if (!process.env.DISABLE_XORIGIN) {
@@ -59,40 +114,62 @@ app.route('/')
 
 // FOR all routes see if it is a valid http
 app.use(function(req, res, next){
+    var originalURL = (req.originalUrl).split("").slice(1).join("") //read in original url remove "/"
 
-
-    var originalURL = (req.originalUrl).split("").slice(1).join("") //read in original url remove /
-
+///////////////////////////////////////////////////////// is it a valid URL that has been passed\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     if (validUrl.isUri(originalURL)) {  	// can i connect to the URL supplied? if not throw an error saves the pain of REGEX
-        var urlJSON = { "original_url" : "" ,"short_url" : ""};
-            // I also need to check if they have been used before so it doesnt get overwritten, highly unlikely)
+        var urlJSON = { "original_url" : "" ,"short_url" : ""};  //make sure its blank
+            // I also need to check if they have been used before so it doesnt get overwritten, highly unlikely so ive not bothered quick check is roughly a billion combos)
                 urlJSON["original_url"] = originalURL;
-                urlJSON["short_url"] = (req.protocol + "://" + req.get('host') + "/" + genShort() + "/");
-                //res.send(" Your shortend URL for " + originalURL + " is " + req.protocol + "://" + req.get('host') + "/" + genShort() + "/");  // need to generate html on fly because this is awful
-              res.send(urlJSON);
-    } else if (originalURL.length ===6){  // if it is 6 letters long it may be a shortcode need to check if its a shortcode
-      
-      //if it not on database
-      if ( 1 === 1){
-        var shortError = {"error":"This url is not on the database."}
-        res.send(shortError)
-        } else {  // url is on database so redirect
+      readDB("fullURl", originalURL, function(result){    //check to see if original url already in database. no point generating a new one. 
+        if (result.length < 1){ // if result is blank then we need to generate a new one 
+          var shortCode = genShort(); //generate shortcode
+          addDB (shortCode , originalURL);  //add it to DB
+
+          urlJSON["short_url"] = (req.protocol + "://" + req.get('host') + "/" + shortCode + "/");
+          res.send(urlJSON);
           
-                res.redirect('http://google.com'); //using this for forwarding  
+        } else {  // otherwise we just pass the only shortcode back
+          
+          shortCode = result[0].shortcode;
+          urlJSON["short_url"] = (req.protocol + "://" + req.get('host') + "/" + shortCode + "/");
+          res.send(urlJSON);
         }
+        
+      });
       
       
       
       
+                
+
+
+
+                //res.send(" Your shortend URL for " + originalURL + " is " + req.protocol + "://" + req.get('host') + "/" + genShort() + "/");  // need to generate html on fly because this is awful
+
       
+      
+      
+      
+///////////////////////////////////////////////////////// is it a shortcode?     \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+    } else if (originalURL.length ===6){  // if it is 6 letters long it may be a shortcode need to check if its a shortcode
+            
+      readDB("shortcode", originalURL, function(result){  //look for shortcode DB and await a callback
+        console.log(result.length);
+        if (result.length < 1){  //if its not found
+          var error = ('"error":"This url is not on the database."');
+          res.send(error);  //if the address has not been found send error
+        } else {
+         res.redirect(result[0].fullURl);  //read the full url from the result and redirect it
+        }
+        }); //end of readb callback
+      
+      
+///////////////////////////////////////////////////////// Not a shortURl or a proper URL throw and error\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\      
     } else {          //if  its not a valid email and its not a vailid shortcode
       var urlError = { "error":"Wrong url format, make sure you have a valid protocol and real site."};
-      res.send(urlError);
-    
+      res.send(urlError);   
     }    
-      
-
-  
 });
 
 
